@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Login — KOTA</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #0b0d12;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 430px;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+
+      margin: 0 auto 24px;
+
+      border: 2px solid #ffffff;
+      border-radius: 16px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -2px;
+    }
+
+    .card {
+      background: #11141b;
+      border: 1px solid #292e38;
+      border-radius: 20px;
+
+      padding: 32px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #8f96a3;
+      font-size: 14px;
+      line-height: 1.5;
+
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+
+      margin-bottom: 8px;
+
+      color: #c8cdd6;
+
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      height: 48px;
+
+      padding: 0 14px;
+
+      border: 1px solid #303641;
+      border-radius: 10px;
+
+      background: #0b0d12;
+      color: #ffffff;
+
+      font-size: 15px;
+
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #ffffff;
+    }
+
+    input::placeholder {
+      color: #555c68;
+    }
+
+    button {
+      width: 100%;
+      height: 50px;
+
+      margin-top: 8px;
+
+      border: none;
+      border-radius: 10px;
+
+      background: #ffffff;
+      color: #0b0d12;
+
+      font-size: 15px;
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .message {
+      display: none;
+
+      margin-top: 18px;
+      padding: 12px 14px;
+
+      border-radius: 10px;
+
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .message.error {
+      display: block;
+
+      border: 1px solid #522b2b;
+      background: #241313;
+      color: #ffb4b4;
+    }
+
+    .message.success {
+      display: block;
+
+      border: 1px solid #30452f;
+      background: #142015;
+      color: #b8e6b3;
+    }
+
+    .register-link {
+      margin-top: 24px;
+
+      text-align: center;
+
+      color: #737a87;
+      font-size: 14px;
+    }
+
+    .register-link a {
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .back-link {
+      display: block;
+
+      margin-top: 20px;
+
+      text-align: center;
+
+      color: #555c68;
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .back-link:hover,
+    .register-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <div class="logo">
+      KO
+    </div>
+
+    <section class="card">
+
+      <h1>Welcome back</h1>
+
+      <p class="subtitle">
+        Login untuk melanjutkan permainan KOTA.
+      </p>
+
+      <form id="loginForm">
+
+        <div class="form-group">
+
+          <label for="email">
+            Email
+          </label>
+
+          <input
+            id="email"
+            type="email"
+            placeholder="nama@email.com"
+            autocomplete="email"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="password">
+            Password
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            placeholder="Masukkan password"
+            autocomplete="current-password"
+            required
+          >
+
+        </div>
+
+
+        <button
+          id="loginButton"
+          type="submit"
+        >
+          LOGIN
+        </button>
+
+      </form>
+
+
+      <div
+        id="message"
+        class="message"
+      ></div>
+
+
+      <div class="register-link">
+
+        Belum punya akun?
+
+        <a href="register.html">
+          Create account
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <a
+      href="index.html"
+      class="back-link"
+    >
+      ← Kembali ke KOTA
+    </a>
+
+  </main>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="js/config.js"></script>
+
+  <script src="js/auth.js"></script>
+
+</body>
+</html>
