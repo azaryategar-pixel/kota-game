@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Create Account — KOTA</title>
+
+  <meta
+    name="description"
+    content="Create your KOTA game account."
+  >
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #0b0d12;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 24px;
+    }
+
+    .register-container {
+      width: 100%;
+      max-width: 430px;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+
+      margin: 0 auto 24px;
+
+      border: 2px solid #ffffff;
+      border-radius: 16px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -2px;
+    }
+
+    .card {
+      border: 1px solid #292e38;
+      border-radius: 20px;
+      padding: 32px;
+
+      background: #11141b;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #8f96a3;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+
+      color: #c8cdd6;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      height: 48px;
+
+      padding: 0 14px;
+
+      border: 1px solid #303641;
+      border-radius: 10px;
+
+      background: #0b0d12;
+      color: #ffffff;
+
+      font-size: 15px;
+      outline: none;
+
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus {
+      border-color: #ffffff;
+    }
+
+    input::placeholder {
+      color: #555c68;
+    }
+
+    .password-note {
+      margin-top: 7px;
+
+      color: #666d79;
+      font-size: 12px;
+    }
+
+    button {
+      width: 100%;
+      height: 50px;
+
+      margin-top: 8px;
+
+      border: none;
+      border-radius: 10px;
+
+      background: #ffffff;
+      color: #0b0d12;
+
+      font-size: 15px;
+      font-weight: 700;
+
+      cursor: pointer;
+
+      transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .message {
+      display: none;
+
+      margin-top: 18px;
+      padding: 12px 14px;
+
+      border-radius: 10px;
+
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .message.error {
+      display: block;
+
+      border: 1px solid #522b2b;
+      background: #241313;
+      color: #ffb4b4;
+    }
+
+    .message.success {
+      display: block;
+
+      border: 1px solid #30452f;
+      background: #142015;
+      color: #b8e6b3;
+    }
+
+    .login-link {
+      margin-top: 24px;
+
+      text-align: center;
+
+      color: #737a87;
+      font-size: 14px;
+    }
+
+    .login-link a {
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    .back-link {
+      display: block;
+
+      margin-top: 20px;
+
+      text-align: center;
+
+      color: #555c68;
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      color: #ffffff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="register-container">
+
+    <div class="logo">
+      KO
+    </div>
+
+    <section class="card">
+
+      <h1>Create account</h1>
+
+      <p class="subtitle">
+        Buat akun KOTA dan mulai bermain.
+      </p>
+
+      <form id="registerForm">
+
+        <div class="form-group">
+          <label for="username">
+            Username
+          </label>
+
+          <input
+            id="username"
+            type="text"
+            placeholder="Contoh: Azar"
+            minlength="3"
+            maxlength="20"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+
+        <div class="form-group">
+          <label for="email">
+            Email
+          </label>
+
+          <input
+            id="email"
+            type="email"
+            placeholder="nama@email.com"
+            autocomplete="email"
+            required
+          >
+        </div>
+
+
+        <div class="form-group">
+          <label for="password">
+            Password
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            placeholder="Minimal 8 karakter"
+            minlength="8"
+            autocomplete="new-password"
+            required
+          >
+
+          <div class="password-note">
+            Gunakan minimal 8 karakter.
+          </div>
+        </div>
+
+
+        <button
+          id="registerButton"
+          type="submit"
+        >
+          CREATE ACCOUNT
+        </button>
+
+      </form>
+
+
+      <div
+        id="message"
+        class="message"
+      ></div>
+
+
+      <div class="login-link">
+        Sudah punya akun?
+        <a href="login.html">
+          Login
+        </a>
+      </div>
+
+    </section>
+
+
+    <a
+      href="index.html"
+      class="back-link"
+    >
+      ← Kembali ke KOTA
+    </a>
+
+  </main>
+
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- KOTA configuration -->
+  <script src="js/config.js"></script>
+
+  <!-- KOTA authentication -->
+  <script src="js/auth.js"></script>
+
+</body>
+</html>
