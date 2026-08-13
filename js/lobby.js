@@ -2,6 +2,11 @@
 // KOTA LOBBY
 // =========================================================
 
+
+// =========================================================
+// LOAD LOBBY
+// =========================================================
+
 async function loadLobby() {
 
   // -----------------------------------------
@@ -11,8 +16,28 @@ async function loadLobby() {
   const {
     data: {
       session
-    }
-  } = await supabaseClient.auth.getSession();
+    },
+    error: sessionError
+  } =
+    await supabaseClient
+      .auth
+      .getSession();
+
+
+  // -----------------------------------------
+  // SESSION ERROR
+  // -----------------------------------------
+
+  if (sessionError) {
+
+    console.error(
+      "Session error:",
+      sessionError
+    );
+
+    return;
+
+  }
 
 
   // -----------------------------------------
@@ -25,6 +50,7 @@ async function loadLobby() {
       "login.html";
 
     return;
+
   }
 
 
@@ -32,55 +58,174 @@ async function loadLobby() {
     session.user;
 
 
-  // -----------------------------------------
+  // =========================================================
+  // DOM ELEMENTS
+  // =========================================================
+
+  const usernameElement =
+    document.getElementById(
+      "username"
+    );
+
+
+  const profileUsername =
+    document.getElementById(
+      "profileUsername"
+    );
+
+
+  const profileEmail =
+    document.getElementById(
+      "profileEmail"
+    );
+
+
+  // =========================================================
+  // DISPLAY EMAIL IMMEDIATELY
+  // =========================================================
+
+  if (profileEmail) {
+
+    profileEmail.textContent =
+      user.email || "-";
+
+  }
+
+
+  // =========================================================
   // LOAD PROFILE
-  // -----------------------------------------
+  // =========================================================
 
   const {
     data: profile,
-    error
-  } = await supabaseClient
-    .from("profiles")
-    .select("username, display_name")
-    .eq("id", user.id)
-    .single();
+    error: profileError
+  } =
+    await supabaseClient
+      .from("profiles")
+      .select(
+        "username, display_name"
+      )
+      .eq(
+        "id",
+        user.id
+      )
+      .maybeSingle();
 
 
-  if (error) {
+  // =========================================================
+  // DETERMINE USERNAME
+  // =========================================================
 
-    console.error(
-      "Profile error:",
-      error
-    );
+  let username = null;
 
-    return;
+
+  // -----------------------------------------
+  // PROFILE USERNAME
+  // -----------------------------------------
+
+  if (
+    profile &&
+    profile.username
+  ) {
+
+    username =
+      profile.username;
+
   }
 
 
   // -----------------------------------------
-  // DISPLAY USERNAME
+  // PROFILE DISPLAY NAME
   // -----------------------------------------
 
-  const username =
-    profile.username;
+  else if (
+    profile &&
+    profile.display_name
+  ) {
+
+    username =
+      profile.display_name;
+
+  }
 
 
-  const usernameElement =
-    document.getElementById("username");
+  // -----------------------------------------
+  // USER METADATA USERNAME
+  // -----------------------------------------
+
+  else if (
+    user.user_metadata &&
+    user.user_metadata.username
+  ) {
+
+    username =
+      user.user_metadata.username;
+
+  }
 
 
-  const profileUsername =
-    document.getElementById("profileUsername");
+  // -----------------------------------------
+  // USER METADATA DISPLAY NAME
+  // -----------------------------------------
+
+  else if (
+    user.user_metadata &&
+    user.user_metadata.display_name
+  ) {
+
+    username =
+      user.user_metadata.display_name;
+
+  }
 
 
-  const profileEmail =
-    document.getElementById("profileEmail");
+  // -----------------------------------------
+  // EMAIL FALLBACK
+  // -----------------------------------------
 
+  else if (user.email) {
+
+    username =
+      user.email.split("@")[0];
+
+  }
+
+
+  // -----------------------------------------
+  // FINAL FALLBACK
+  // -----------------------------------------
+
+  else {
+
+    username =
+      "Player";
+
+  }
+
+
+  // =========================================================
+  // PROFILE ERROR
+  // =========================================================
+
+  if (profileError) {
+
+    console.error(
+      "Profile error:",
+      profileError
+    );
+
+  }
+
+
+  // =========================================================
+  // DISPLAY USERNAME
+  // =========================================================
 
   if (usernameElement) {
 
     usernameElement.textContent =
       username;
+
   }
 
 
@@ -88,13 +233,7 @@ async function loadLobby() {
 
     profileUsername.textContent =
       username;
-  }
 
-
-  if (profileEmail) {
-
-    profileEmail.textContent =
-      user.email || "-";
   }
 
 }
@@ -105,7 +244,9 @@ async function loadLobby() {
 // =========================================================
 
 const logoutButton =
-  document.getElementById("logoutButton");
+  document.getElementById(
+    "logoutButton"
+  );
 
 
 if (logoutButton) {
@@ -114,7 +255,9 @@ if (logoutButton) {
     "click",
     async function () {
 
-      logoutButton.disabled = true;
+      logoutButton.disabled =
+        true;
+
 
       logoutButton.textContent =
         "Logging out...";
@@ -122,7 +265,10 @@ if (logoutButton) {
 
       const {
         error
-      } = await supabaseClient.auth.signOut();
+      } =
+        await supabaseClient
+          .auth
+          .signOut();
 
 
       if (error) {
@@ -132,12 +278,17 @@ if (logoutButton) {
           error
         );
 
-        logoutButton.disabled = false;
+
+        logoutButton.disabled =
+          false;
+
 
         logoutButton.textContent =
           "Logout";
 
+
         return;
+
       }
 
 
@@ -155,7 +306,9 @@ if (logoutButton) {
 // =========================================================
 
 const createRoomCard =
-  document.getElementById("createRoomCard");
+  document.getElementById(
+    "createRoomCard"
+  );
 
 
 if (createRoomCard) {
@@ -172,8 +325,9 @@ if (createRoomCard) {
 
 }
 
+
 // =========================================================
-// JOIN ROOM BUTTON
+// JOIN ROOM
 // =========================================================
 
 const joinRoomCard =
@@ -190,29 +344,6 @@ if (joinRoomCard) {
 
       window.location.href =
         "join-room.html";
-
-    }
-  );
-
-}
-
-// =========================================================
-// JOIN ROOM
-// =========================================================
-
-const joinRoomCard =
-  document.getElementById("joinRoomCard");
-
-
-if (joinRoomCard) {
-
-  joinRoomCard.addEventListener(
-    "click",
-    function () {
-
-      alert(
-        "Join Room akan kita buat pada tahap berikutnya."
-      );
 
     }
   );
