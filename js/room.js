@@ -152,37 +152,32 @@ async function loadRoom() {
 
 async function loadPlayers() {
 
+  // -----------------------------------------
+  // GET PLAYERS
+  // -----------------------------------------
+
   const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("game_players")
-      .select(
-        `
-        player_number,
-        is_host,
-        user_id,
-        profiles (
-          username,
-          display_name
-        )
-        `
-      )
-      .eq("game_id", roomId)
-      .order(
-        "player_number",
-        {
-          ascending: true
-        }
-      );
+    data: players,
+    error: playersError
+  } = await supabaseClient
+    .from("game_players")
+    .select(
+      "player_number, is_host, user_id"
+    )
+    .eq("game_id", roomId)
+    .order(
+      "player_number",
+      {
+        ascending: true
+      }
+    );
 
 
-  if (error) {
+  if (playersError) {
 
     console.error(
       "Players error:",
-      error
+      playersError
     );
 
     showRoomError(
@@ -193,9 +188,114 @@ async function loadPlayers() {
   }
 
 
-  renderPlayers(data);
+  // -----------------------------------------
+  // NO PLAYERS
+  // -----------------------------------------
+
+  if (!players || players.length === 0) {
+
+    renderPlayers([]);
+
+    return;
+  }
+
+
+  // -----------------------------------------
+  // GET USER IDS
+  // -----------------------------------------
+
+  const userIds =
+    players.map(function (player) {
+
+      return player.user_id;
+
+    });
+
+
+  // -----------------------------------------
+  // GET PROFILES
+  // -----------------------------------------
+
+  const {
+    data: profiles,
+    error: profilesError
+  } = await supabaseClient
+    .from("profiles")
+    .select(
+      "id, username, display_name"
+    )
+    .in(
+      "id",
+      userIds
+    );
+
+
+  if (profilesError) {
+
+    console.error(
+      "Profiles error:",
+      profilesError
+    );
+
+    showRoomError(
+      "Profile pemain tidak dapat dimuat."
+    );
+
+    return;
+  }
+
+
+  // -----------------------------------------
+  // CREATE PROFILE MAP
+  // -----------------------------------------
+
+  const profileMap =
+    new Map();
+
+
+  (profiles || []).forEach(
+    function (profile) {
+
+      profileMap.set(
+        profile.id,
+        profile
+      );
+
+    }
+  );
+
+
+  // -----------------------------------------
+  // COMBINE PLAYERS + PROFILES
+  // -----------------------------------------
+
+  const playersWithProfiles =
+    players.map(function (player) {
+
+      return {
+
+        ...player,
+
+        profiles:
+          profileMap.get(
+            player.user_id
+          ) || null
+
+      };
+
+    });
+
+
+  // -----------------------------------------
+  // RENDER
+  // -----------------------------------------
+
+  renderPlayers(
+    playersWithProfiles
+  );
 
 }
+
 
 
 // =========================================================
