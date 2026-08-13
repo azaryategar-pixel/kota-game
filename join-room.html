@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Join Room — KOTA</title>
+
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+
+    body {
+
+      min-height: 100vh;
+
+      background: #0b0d12;
+
+      color: #ffffff;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      padding: 24px;
+
+    }
+
+
+    .container {
+
+      width: 100%;
+
+      max-width: 520px;
+
+    }
+
+
+    .logo {
+
+      width: 64px;
+
+      height: 64px;
+
+      margin:
+        0 auto 24px;
+
+      border:
+        2px solid #ffffff;
+
+      border-radius: 16px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-size: 24px;
+
+      font-weight: 800;
+
+      letter-spacing: -2px;
+
+    }
+
+
+    .card {
+
+      background: #11141b;
+
+      border:
+        1px solid #292e38;
+
+      border-radius: 20px;
+
+      padding: 32px;
+
+    }
+
+
+    h1 {
+
+      font-size: 30px;
+
+      letter-spacing: -1px;
+
+      margin-bottom: 8px;
+
+    }
+
+
+    .subtitle {
+
+      color: #858c99;
+
+      font-size: 14px;
+
+      line-height: 1.6;
+
+      margin-bottom: 30px;
+
+    }
+
+
+    label {
+
+      display: block;
+
+      margin-bottom: 10px;
+
+      color: #c8cdd6;
+
+      font-size: 14px;
+
+      font-weight: 600;
+
+    }
+
+
+    input {
+
+      width: 100%;
+
+      height: 58px;
+
+      padding:
+        0 16px;
+
+      background: #0b0d12;
+
+      color: #ffffff;
+
+      border:
+        1px solid #303641;
+
+      border-radius: 10px;
+
+      outline: none;
+
+      font-size: 20px;
+
+      font-weight: 700;
+
+      letter-spacing: 2px;
+
+      text-transform: uppercase;
+
+    }
+
+
+    input:focus {
+
+      border-color:
+        #ffffff;
+
+    }
+
+
+    button {
+
+      width: 100%;
+
+      height: 52px;
+
+      margin-top: 20px;
+
+      border: none;
+
+      border-radius: 10px;
+
+      background: #ffffff;
+
+      color: #0b0d12;
+
+      font-size: 15px;
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+    }
+
+
+    button:hover {
+
+      opacity: 0.9;
+
+    }
+
+
+    button:disabled {
+
+      opacity: 0.5;
+
+      cursor: not-allowed;
+
+    }
+
+
+    .message {
+
+      display: none;
+
+      margin-top: 18px;
+
+      padding: 13px 14px;
+
+      border-radius: 10px;
+
+      font-size: 13px;
+
+      line-height: 1.5;
+
+    }
+
+
+    .message.error {
+
+      display: block;
+
+      border:
+        1px solid #522b2b;
+
+      background: #241313;
+
+      color: #ffb4b4;
+
+    }
+
+
+    .back-link {
+
+      display: block;
+
+      margin-top: 20px;
+
+      text-align: center;
+
+      color: #555c68;
+
+      font-size: 13px;
+
+      text-decoration: none;
+
+    }
+
+
+    .back-link:hover {
+
+      color: #ffffff;
+
+    }
+
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <main class="container">
+
+
+    <div class="logo">
+      KO
+    </div>
+
+
+    <section class="card">
+
+      <h1>
+        Join Room
+      </h1>
+
+
+      <p class="subtitle">
+        Masukkan kode room yang diberikan
+        oleh host untuk bergabung ke permainan.
+      </p>
+
+
+      <form id="joinRoomForm">
+
+
+        <label for="roomCodeInput">
+          Room Code
+        </label>
+
+
+        <input
+          id="roomCodeInput"
+          type="text"
+          placeholder="KOTA-72E0"
+          maxlength="9"
+          autocomplete="off"
+          required
+        >
+
+
+        <button
+          id="joinRoomButton"
+          type="submit"
+        >
+          JOIN ROOM
+        </button>
+
+
+      </form>
+
+
+      <div
+        id="message"
+        class="message"
+      ></div>
+
+
+    </section>
+
+
+    <a
+      href="lobby.html"
+      class="back-link"
+    >
+      ← Kembali ke Lobby
+    </a>
+
+
+  </main>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="js/config.js"></script>
+
+  <script src="js/auth.js"></script>
+
+  <script src="js/join-room.js"></script>
+
+
+</body>
+
+</html>
