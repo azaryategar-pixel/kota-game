@@ -164,9 +164,8 @@ if (createRoomCard) {
     "click",
     function () {
 
-      alert(
-        "Create Room akan kita buat pada tahap berikutnya."
-      );
+      window.location.href =
+        "create-room.html";
 
     }
   );
