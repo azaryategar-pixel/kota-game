@@ -268,3 +268,180 @@ function getReadableAuthError(error) {
   );
 
 }
+
+// =========================================================
+// LOGIN
+// =========================================================
+
+const loginForm = document.getElementById("loginForm");
+const loginButton = document.getElementById("loginButton");
+const loginMessage = document.getElementById("message");
+
+
+if (loginForm) {
+
+  loginForm.addEventListener("submit", async function (event) {
+
+    event.preventDefault();
+
+    const email =
+      document
+        .getElementById("email")
+        .value
+        .trim()
+        .toLowerCase();
+
+    const password =
+      document
+        .getElementById("password")
+        .value;
+
+
+    loginButton.disabled = true;
+    loginButton.textContent = "LOGGING IN...";
+
+    clearLoginMessage();
+
+
+    try {
+
+      const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+
+          email: email,
+          password: password
+
+        });
+
+
+      if (error) {
+
+        console.error(
+          "Login error:",
+          error
+        );
+
+        showLoginMessage(
+          getReadableLoginError(error),
+          "error"
+        );
+
+        return;
+      }
+
+
+      console.log(
+        "Login successful:",
+        data
+      );
+
+
+      showLoginMessage(
+        "Login berhasil. Mengarahkan ke lobby...",
+        "success"
+      );
+
+
+      setTimeout(function () {
+
+        window.location.href =
+          "lobby.html";
+
+      }, 800);
+
+
+    } catch (error) {
+
+      console.error(
+        "Unexpected login error:",
+        error
+      );
+
+      showLoginMessage(
+        "Terjadi kesalahan. Silakan coba lagi.",
+        "error"
+      );
+
+
+    } finally {
+
+      loginButton.disabled = false;
+      loginButton.textContent = "LOGIN";
+
+    }
+
+  });
+
+}
+
+
+// =========================================================
+// LOGIN MESSAGE
+// =========================================================
+
+function showLoginMessage(text, type) {
+
+  if (!loginMessage) {
+    return;
+  }
+
+  loginMessage.textContent = text;
+
+  loginMessage.className =
+    "message " + type;
+}
+
+
+function clearLoginMessage() {
+
+  if (!loginMessage) {
+    return;
+  }
+
+  loginMessage.textContent = "";
+
+  loginMessage.className =
+    "message";
+}
+
+
+// =========================================================
+// LOGIN ERROR
+// =========================================================
+
+function getReadableLoginError(error) {
+
+  const errorMessage =
+    error?.message?.toLowerCase() || "";
+
+
+  if (
+    errorMessage.includes("invalid login credentials")
+  ) {
+
+    return "Email atau password salah.";
+  }
+
+
+  if (
+    errorMessage.includes("email not confirmed")
+  ) {
+
+    return "Email kamu belum diverifikasi. Silakan cek inbox email.";
+  }
+
+
+  if (
+    errorMessage.includes("rate limit")
+  ) {
+
+    return "Terlalu banyak percobaan. Silakan tunggu beberapa saat.";
+  }
+
+
+  return (
+    error?.message ||
+    "Login gagal. Silakan coba lagi."
+  );
+}
+
