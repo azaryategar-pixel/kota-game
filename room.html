@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Game Room — KOTA</title>
+
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+
+    body {
+
+      min-height: 100vh;
+
+      background: #0b0d12;
+
+      color: #ffffff;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+      padding: 24px;
+
+    }
+
+
+    .container {
+
+      width:
+        min(900px, 94%);
+
+      margin:
+        0 auto;
+
+      padding:
+        40px 0;
+
+    }
+
+
+    .top {
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      margin-bottom:
+        28px;
+
+    }
+
+
+    .brand {
+
+      font-size:
+        24px;
+
+      font-weight:
+        800;
+
+    }
+
+
+    .leave-button {
+
+      border:
+        1px solid #303641;
+
+      background:
+        transparent;
+
+      color:
+        #aeb4c0;
+
+      padding:
+        9px 15px;
+
+      border-radius:
+        9px;
+
+      cursor:
+        pointer;
+
+    }
+
+
+    .room-card {
+
+      background:
+        #11141b;
+
+      border:
+        1px solid #292e38;
+
+      border-radius:
+        20px;
+
+      padding:
+        32px;
+
+    }
+
+
+    .room-label {
+
+      color:
+        #737a87;
+
+      font-size:
+        13px;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        1px;
+
+      margin-bottom:
+        12px;
+
+    }
+
+
+    .room-code {
+
+      font-size:
+        clamp(40px, 9vw, 70px);
+
+      font-weight:
+        800;
+
+      letter-spacing:
+        4px;
+
+      margin-bottom:
+        16px;
+
+      word-break:
+        break-word;
+
+    }
+
+
+    .copy-button {
+
+      border:
+        1px solid #303641;
+
+      background:
+        #0b0d12;
+
+      color:
+        #ffffff;
+
+      padding:
+        10px 16px;
+
+      border-radius:
+        9px;
+
+      cursor:
+        pointer;
+
+      margin-bottom:
+        32px;
+
+    }
+
+
+    .status {
+
+      padding:
+        14px 16px;
+
+      border:
+        1px solid #292e38;
+
+      border-radius:
+        12px;
+
+      color:
+        #aeb4c0;
+
+      margin-bottom:
+        28px;
+
+    }
+
+
+    .players-title {
+
+      color:
+        #737a87;
+
+      font-size:
+        13px;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        1px;
+
+      margin-bottom:
+        14px;
+
+    }
+
+
+    .players {
+
+      display:
+        grid;
+
+      gap:
+        10px;
+
+    }
+
+
+    .player {
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      padding:
+        15px 16px;
+
+      background:
+        #0b0d12;
+
+      border:
+        1px solid #292e38;
+
+      border-radius:
+        12px;
+
+    }
+
+
+    .player-left {
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        12px;
+
+    }
+
+
+    .number {
+
+      width:
+        32px;
+
+      height:
+        32px;
+
+      border:
+        1px solid #303641;
+
+      border-radius:
+        8px;
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      font-size:
+        13px;
+
+      color:
+        #aeb4c0;
+
+    }
+
+
+    .player-name {
+
+      font-weight:
+        600;
+
+    }
+
+
+    .host {
+
+      color:
+        #737a87;
+
+      font-size:
+        12px;
+
+    }
+
+
+    .loading {
+
+      color:
+        #737a87;
+
+    }
+
+
+    .error {
+
+      color:
+        #ffb4b4;
+
+      border-color:
+        #522b2b;
+
+      background:
+        #241313;
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <main class="container">
+
+
+    <div class="top">
+
+      <div class="brand">
+        KOTA
+      </div>
+
+
+      <button
+        id="leaveButton"
+        class="leave-button"
+      >
+        Leave Room
+      </button>
+
+    </div>
+
+
+    <section
+      id="roomCard"
+      class="room-card"
+    >
+
+      <div class="room-label">
+        Room Code
+      </div>
+
+
+      <div
+        id="roomCode"
+        class="room-code"
+      >
+        ...
+      </div>
+
+
+      <button
+        id="copyButton"
+        class="copy-button"
+      >
+        Copy Code
+      </button>
+
+
+      <div
+        id="status"
+        class="status"
+      >
+        <span class="loading">
+          Loading room...
+        </span>
+      </div>
+
+
+      <div class="players-title">
+        Players
+      </div>
+
+
+      <div
+        id="players"
+        class="players"
+      >
+
+        <div class="player">
+
+          <div class="player-left">
+
+            <div class="number">
+              1
+            </div>
+
+            <div>
+              <div class="player-name loading">
+                Loading...
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="js/config.js"></script>
+
+  <script src="js/auth.js"></script>
+
+  <script src="js/room.js"></script>
+
+</body>
+
+</html>
