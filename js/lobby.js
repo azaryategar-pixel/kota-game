@@ -172,6 +172,29 @@ if (createRoomCard) {
 
 }
 
+// =========================================================
+// JOIN ROOM BUTTON
+// =========================================================
+
+const joinRoomCard =
+  document.getElementById(
+    "joinRoomCard"
+  );
+
+
+if (joinRoomCard) {
+
+  joinRoomCard.addEventListener(
+    "click",
+    function () {
+
+      window.location.href =
+        "join-room.html";
+
+    }
+  );
+
+}
 
 // =========================================================
 // JOIN ROOM
