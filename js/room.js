@@ -787,30 +787,94 @@ if (leaveButton) {
 
   leaveButton.addEventListener(
     "click",
-    function () {
+    async function () {
+
+      // -----------------------------------------
+      // DISABLE BUTTON
+      // -----------------------------------------
+
+      leaveButton.disabled =
+        true;
+
+      leaveButton.textContent =
+        "Leaving...";
+
+
+      // -----------------------------------------
+      // REMOVE PLAYER FROM DATABASE
+      // -----------------------------------------
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .rpc(
+            "leave_game",
+            {
+              p_game_id: roomId
+            }
+          );
+
+
+      // -----------------------------------------
+      // HANDLE ERROR
+      // -----------------------------------------
+
+      if (error) {
+
+        console.error(
+          "Leave room error:",
+          error
+        );
+
+        leaveButton.disabled =
+          false;
+
+        leaveButton.textContent =
+          "Leave Room";
+
+        alert(
+          "Gagal keluar dari room."
+        );
+
+        return;
+
+      }
+
+
+      // -----------------------------------------
+      // REMOVE SESSION DATA
+      // -----------------------------------------
 
       sessionStorage.removeItem(
         "kota_room_id"
       );
-
 
       sessionStorage.removeItem(
         "kota_room_code"
       );
 
 
-      // Remove realtime channel
+      // -----------------------------------------
+      // REMOVE REALTIME CHANNEL
+      // -----------------------------------------
+
       if (roomChannel) {
 
-        supabaseClient
+        await supabaseClient
           .removeChannel(
             roomChannel
           );
 
-        roomChannel = null;
+        roomChannel =
+          null;
 
       }
 
+
+      // -----------------------------------------
+      // GO BACK TO LOBBY
+      // -----------------------------------------
 
       window.location.href =
         "lobby.html";
