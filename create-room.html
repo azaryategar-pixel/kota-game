@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Create Room — KOTA</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+
+      background: #0b0d12;
+      color: #ffffff;
+
+      font-family: Arial, Helvetica, sans-serif;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+
+      margin: 0 auto 24px;
+
+      border: 2px solid #ffffff;
+      border-radius: 16px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 24px;
+      font-weight: 800;
+
+      letter-spacing: -2px;
+    }
+
+    .card {
+      background: #11141b;
+
+      border: 1px solid #292e38;
+
+      border-radius: 20px;
+
+      padding: 32px;
+    }
+
+    h1 {
+      font-size: 30px;
+
+      letter-spacing: -1px;
+
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #858c99;
+
+      font-size: 14px;
+
+      line-height: 1.6;
+
+      margin-bottom: 32px;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+
+      margin-bottom: 10px;
+
+      color: #c8cdd6;
+
+      font-size: 14px;
+
+      font-weight: 600;
+    }
+
+    .player-options {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, 1fr);
+
+      gap: 10px;
+    }
+
+    .player-option {
+      position: relative;
+    }
+
+    .player-option input {
+      position: absolute;
+
+      opacity: 0;
+
+      pointer-events: none;
+    }
+
+    .player-option label {
+      height: 48px;
+
+      margin: 0;
+
+      border: 1px solid #303641;
+
+      border-radius: 10px;
+
+      background: #0b0d12;
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      cursor: pointer;
+
+      color: #8f96a3;
+
+      transition:
+        border-color 0.2s ease,
+        color 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .player-option input:checked + label {
+      border-color: #ffffff;
+
+      background: #ffffff;
+
+      color: #0b0d12;
+    }
+
+    .player-option label:hover {
+      border-color: #ffffff;
+
+      color: #ffffff;
+    }
+
+    .player-option input:checked + label:hover {
+      color: #0b0d12;
+    }
+
+    button {
+      width: 100%;
+
+      height: 52px;
+
+      border: none;
+
+      border-radius: 10px;
+
+      background: #ffffff;
+
+      color: #0b0d12;
+
+      font-size: 15px;
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+      transition:
+        opacity 0.2s ease,
+        transform 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+
+      cursor: not-allowed;
+
+      transform: none;
+    }
+
+    .message {
+      display: none;
+
+      margin-top: 18px;
+
+      padding: 13px 14px;
+
+      border-radius: 10px;
+
+      font-size: 13px;
+
+      line-height: 1.5;
+    }
+
+    .message.error {
+      display: block;
+
+      border: 1px solid #522b2b;
+
+      background: #241313;
+
+      color: #ffb4b4;
+    }
+
+    .back-link {
+      display: block;
+
+      margin-top: 20px;
+
+      text-align: center;
+
+      color: #555c68;
+
+      font-size: 13px;
+
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      color: #ffffff;
+    }
+
+    @media (max-width: 500px) {
+
+      .card {
+        padding: 24px;
+      }
+
+      .player-options {
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <div class="logo">
+      KO
+    </div>
+
+
+    <section class="card">
+
+      <h1>
+        Create Room
+      </h1>
+
+      <p class="subtitle">
+        Buat permainan baru dan tunggu pemain lain
+        bergabung menggunakan kode room.
+      </p>
+
+
+      <form id="createRoomForm">
+
+        <div class="form-group">
+
+          <label>
+            Maximum Players
+          </label>
+
+
+          <div class="player-options">
+
+            <div class="player-option">
+              <input
+                type="radio"
+                id="players2"
+                name="maxPlayers"
+                value="2"
+              >
+
+              <label for="players2">
+                2
+              </label>
+            </div>
+
+
+            <div class="player-option">
+              <input
+                type="radio"
+                id="players3"
+                name="maxPlayers"
+                value="3"
+              >
+
+              <label for="players3">
+                3
+              </label>
+            </div>
+
+
+            <div class="player-option">
+              <input
+                type="radio"
+                id="players4"
+                name="maxPlayers"
+                value="4"
+                checked
+              >
+
+              <label for="players4">
+                4
+              </label>
+            </div>
+
+
+            <div class="player-option">
+              <input
+                type="radio"
+                id="players5"
+                name="maxPlayers"
+                value="5"
+              >
+
+              <label for="players5">
+                5
+              </label>
+            </div>
+
+
+            <div class="player-option">
+              <input
+                type="radio"
+                id="players6"
+                name="maxPlayers"
+                value="6"
+              >
+
+              <label for="players6">
+                6
+              </label>
+            </div>
+
+
+            <div class="player-option">
+              <input
+                type="radio"
+                id="players7"
+                name="maxPlayers"
+                value="7"
+              >
+
+              <label for="players7">
+                7
+              </label>
+            </div>
+
+
+            <div class="player-option">
+              <input
+                type="radio"
+                id="players8"
+                name="maxPlayers"
+                value="8"
+              >
+
+              <label for="players8">
+                8
+              </label>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <button
+          id="createRoomButton"
+          type="submit"
+        >
+          CREATE ROOM
+        </button>
+
+      </form>
+
+
+      <div
+        id="message"
+        class="message"
+      ></div>
+
+    </section>
+
+
+    <a
+      href="lobby.html"
+      class="back-link"
+    >
+      ← Kembali ke Lobby
+    </a>
+
+  </main>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="js/config.js"></script>
+
+  <script src="js/auth.js"></script>
+
+  <script src="js/create-room.js"></script>
+
+</body>
+</html>
