@@ -3,6 +3,10 @@
 // =========================================================
 
 
+// =========================================================
+// ROOM DATA
+// =========================================================
+
 const roomId =
   sessionStorage.getItem(
     "kota_room_id"
@@ -14,6 +18,10 @@ const roomCode =
     "kota_room_code"
   );
 
+
+// =========================================================
+// DOM ELEMENTS
+// =========================================================
 
 const roomCodeElement =
   document.getElementById(
@@ -44,7 +52,13 @@ const leaveButton =
     "leaveButton"
   );
 
+
+// =========================================================
+// REALTIME CHANNEL
+// =========================================================
+
 let roomChannel = null;
+
 
 // =========================================================
 // INITIAL CHECK
@@ -76,6 +90,10 @@ if (roomCodeElement) {
 
 async function loadRoom() {
 
+  // -----------------------------------------
+  // CHECK SESSION
+  // -----------------------------------------
+
   const {
     data: {
       session
@@ -96,9 +114,9 @@ async function loadRoom() {
   }
 
 
-  // =========================================
-  // LOAD ROOM
-  // =========================================
+  // -----------------------------------------
+  // GET ROOM
+  // -----------------------------------------
 
   const {
     data: room,
@@ -109,9 +127,16 @@ async function loadRoom() {
       .select(
         "id, room_code, status, max_players"
       )
-      .eq("id", roomId)
+      .eq(
+        "id",
+        roomId
+      )
       .single();
 
+
+  // -----------------------------------------
+  // ROOM ERROR
+  // -----------------------------------------
 
   if (roomError) {
 
@@ -129,29 +154,37 @@ async function loadRoom() {
   }
 
 
-  roomCodeElement.textContent =
-    room.room_code;
+  // -----------------------------------------
+  // DISPLAY ROOM CODE
+  // -----------------------------------------
+
+  if (roomCodeElement) {
+
+    roomCodeElement.textContent =
+      room.room_code;
+
+  }
 
 
-  // =========================================
+  // -----------------------------------------
   // LOAD PLAYERS
-  // =========================================
+  // -----------------------------------------
 
   await loadPlayers();
 
 
-  // =========================================
-  // UPDATE COUNTER
-  // =========================================
+  // -----------------------------------------
+  // UPDATE PLAYER COUNT
+  // -----------------------------------------
 
   await updateRoomStatus(
     room.max_players
   );
 
 
-  // =========================================
+  // -----------------------------------------
   // START REALTIME
-  // =========================================
+  // -----------------------------------------
 
   subscribeToRoom(
     room.id
@@ -159,48 +192,6 @@ async function loadRoom() {
 
 }
 
-
-  // -----------------------------------------
-  // LOAD ROOM
-  // -----------------------------------------
-
-  const {
-    data: room,
-    error: roomError
-  } =
-    await supabaseClient
-      .from("game_rooms")
-      .select(
-        "id, room_code, status, max_players"
-      )
-      .eq("id", roomId)
-      .single();
-
-
-  if (roomError) {
-
-    console.error(
-      "Room error:",
-      roomError
-    );
-
-    showRoomError(
-      "Room tidak dapat ditemukan."
-    );
-
-    return;
-  }
-
-
-  // -----------------------------------------
-  // STATUS
-  // -----------------------------------------
-
-  if (statusElement) {
-
-    statusElement.textContent =
-      `Waiting for players · 0/${room.max_players}`;
-  }
 
 // =========================================================
 // UPDATE ROOM STATUS
@@ -229,6 +220,10 @@ async function updateRoomStatus(
       );
 
 
+  // -----------------------------------------
+  // COUNT ERROR
+  // -----------------------------------------
+
   if (error) {
 
     console.error(
@@ -241,11 +236,22 @@ async function updateRoomStatus(
   }
 
 
+  // -----------------------------------------
+  // PLAYER COUNT
+  // -----------------------------------------
+
   const playerCount =
     count || 0;
 
 
+  // -----------------------------------------
+  // UPDATE STATUS ELEMENT
+  // -----------------------------------------
+
   if (statusElement) {
+
+    statusElement.className =
+      "status";
 
     statusElement.textContent =
       `Waiting for players · ${playerCount}/${maxPlayers}`;
@@ -253,6 +259,7 @@ async function updateRoomStatus(
   }
 
 }
+
 
 // =========================================================
 // REALTIME
@@ -284,133 +291,163 @@ function subscribeToRoom(
     supabaseClient
       .channel(
         `kota-room-${currentRoomId}`
-      )
-
-
-      // ---------------------------------------
-      // PLAYER CHANGES
-      // ---------------------------------------
-
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "game_players",
-          filter:
-            `game_id=eq.${currentRoomId}`
-        },
-
-        async function () {
-
-          console.log(
-            "Player change detected"
-          );
-
-
-          await loadPlayers();
-
-
-          // Get current max players
-          const {
-            data: room
-          } =
-            await supabaseClient
-              .from("game_rooms")
-              .select(
-                "max_players"
-              )
-              .eq(
-                "id",
-                currentRoomId
-              )
-              .single();
-
-
-          if (room) {
-
-            await updateRoomStatus(
-              room.max_players
-            );
-
-          }
-
-        }
-      )
-
-
-      // ---------------------------------------
-      // ROOM CHANGES
-      // ---------------------------------------
-
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "game_rooms",
-          filter:
-            `id=eq.${currentRoomId}`
-        },
-
-        async function () {
-
-          console.log(
-            "Room change detected"
-          );
-
-
-          const {
-            data: room
-          } =
-            await supabaseClient
-              .from("game_rooms")
-              .select(
-                "id, room_code, status, max_players"
-              )
-              .eq(
-                "id",
-                currentRoomId
-              )
-              .single();
-
-
-          if (!room) {
-            return;
-          }
-
-
-          await updateRoomStatus(
-            room.max_players
-          );
-
-        }
-      )
-
-
-      // ---------------------------------------
-      // SUBSCRIBE
-      // ---------------------------------------
-
-      .subscribe(
-        function (status) {
-
-          console.log(
-            "Realtime status:",
-            status
-          );
-
-        }
       );
 
-}
+
+  // -----------------------------------------
+  // PLAYER CHANGES
+  // -----------------------------------------
+
+  roomChannel.on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "game_players",
+      filter:
+        `game_id=eq.${currentRoomId}`
+    },
+
+    async function () {
+
+      console.log(
+        "Player change detected"
+      );
+
+
+      // Reload player list
+      await loadPlayers();
+
+
+      // Get latest room information
+      const {
+        data: room,
+        error: roomError
+      } =
+        await supabaseClient
+          .from("game_rooms")
+          .select(
+            "max_players"
+          )
+          .eq(
+            "id",
+            currentRoomId
+          )
+          .single();
+
+
+      if (roomError) {
+
+        console.error(
+          "Room status error:",
+          roomError
+        );
+
+        return;
+
+      }
+
+
+      if (room) {
+
+        await updateRoomStatus(
+          room.max_players
+        );
+
+      }
+
+    }
+  );
 
 
   // -----------------------------------------
-  // LOAD PLAYERS
+  // ROOM CHANGES
   // -----------------------------------------
 
-  await loadPlayers();
+  roomChannel.on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "game_rooms",
+      filter:
+        `id=eq.${currentRoomId}`
+    },
+
+    async function () {
+
+      console.log(
+        "Room change detected"
+      );
+
+
+      const {
+        data: room,
+        error: roomError
+      } =
+        await supabaseClient
+          .from("game_rooms")
+          .select(
+            "id, room_code, status, max_players"
+          )
+          .eq(
+            "id",
+            currentRoomId
+          )
+          .single();
+
+
+      if (roomError) {
+
+        console.error(
+          "Room realtime error:",
+          roomError
+        );
+
+        return;
+
+      }
+
+
+      if (!room) {
+
+        return;
+
+      }
+
+
+      // Update room code if changed
+      if (roomCodeElement) {
+
+        roomCodeElement.textContent =
+          room.room_code;
+
+      }
+
+
+      // Update player count
+      await updateRoomStatus(
+        room.max_players
+      );
+
+    }
+  );
+
+
+  // -----------------------------------------
+  // SUBSCRIBE
+  // -----------------------------------------
+
+  roomChannel.subscribe(
+    function (status) {
+
+      console.log(
+        "Realtime status:",
+        status
+      );
+
+    }
+  );
 
 }
 
@@ -428,19 +465,27 @@ async function loadPlayers() {
   const {
     data: players,
     error: playersError
-  } = await supabaseClient
-    .from("game_players")
-    .select(
-      "player_number, is_host, user_id"
-    )
-    .eq("game_id", roomId)
-    .order(
-      "player_number",
-      {
-        ascending: true
-      }
-    );
+  } =
+    await supabaseClient
+      .from("game_players")
+      .select(
+        "player_number, is_host, user_id"
+      )
+      .eq(
+        "game_id",
+        roomId
+      )
+      .order(
+        "player_number",
+        {
+          ascending: true
+        }
+      );
 
+
+  // -----------------------------------------
+  // PLAYERS ERROR
+  // -----------------------------------------
 
   if (playersError) {
 
@@ -454,6 +499,7 @@ async function loadPlayers() {
     );
 
     return;
+
   }
 
 
@@ -461,11 +507,15 @@ async function loadPlayers() {
   // NO PLAYERS
   // -----------------------------------------
 
-  if (!players || players.length === 0) {
+  if (
+    !players ||
+    players.length === 0
+  ) {
 
     renderPlayers([]);
 
     return;
+
   }
 
 
@@ -474,11 +524,13 @@ async function loadPlayers() {
   // -----------------------------------------
 
   const userIds =
-    players.map(function (player) {
+    players.map(
+      function (player) {
 
-      return player.user_id;
+        return player.user_id;
 
-    });
+      }
+    );
 
 
   // -----------------------------------------
@@ -488,16 +540,21 @@ async function loadPlayers() {
   const {
     data: profiles,
     error: profilesError
-  } = await supabaseClient
-    .from("profiles")
-    .select(
-      "id, username, display_name"
-    )
-    .in(
-      "id",
-      userIds
-    );
+  } =
+    await supabaseClient
+      .from("profiles")
+      .select(
+        "id, username, display_name"
+      )
+      .in(
+        "id",
+        userIds
+      );
 
+
+  // -----------------------------------------
+  // PROFILES ERROR
+  // -----------------------------------------
 
   if (profilesError) {
 
@@ -511,6 +568,7 @@ async function loadPlayers() {
     );
 
     return;
+
   }
 
 
@@ -539,24 +597,26 @@ async function loadPlayers() {
   // -----------------------------------------
 
   const playersWithProfiles =
-    players.map(function (player) {
+    players.map(
+      function (player) {
 
-      return {
+        return {
 
-        ...player,
+          ...player,
 
-        profiles:
-          profileMap.get(
-            player.user_id
-          ) || null
+          profiles:
+            profileMap.get(
+              player.user_id
+            ) || null
 
-      };
+        };
 
-    });
+      }
+    );
 
 
   // -----------------------------------------
-  // RENDER
+  // RENDER PLAYERS
   // -----------------------------------------
 
   renderPlayers(
@@ -566,20 +626,32 @@ async function loadPlayers() {
 }
 
 
-
 // =========================================================
 // RENDER PLAYERS
 // =========================================================
 
-function renderPlayers(players) {
+function renderPlayers(
+  players
+) {
 
   if (!playersElement) {
+
     return;
+
   }
 
 
-  playersElement.innerHTML = "";
+  // -----------------------------------------
+  // CLEAR CURRENT PLAYERS
+  // -----------------------------------------
 
+  playersElement.innerHTML =
+    "";
+
+
+  // -----------------------------------------
+  // NO PLAYERS
+  // -----------------------------------------
 
   if (!players.length) {
 
@@ -592,61 +664,70 @@ function renderPlayers(players) {
     `;
 
     return;
+
   }
 
 
-  players.forEach(function (player) {
+  // -----------------------------------------
+  // RENDER EACH PLAYER
+  // -----------------------------------------
 
-    const profile =
-      player.profiles;
+  players.forEach(
+    function (player) {
 
-
-    const username =
-      profile?.username ||
-      profile?.display_name ||
-      "Player";
-
-
-    const playerElement =
-      document.createElement("div");
+      const profile =
+        player.profiles;
 
 
-    playerElement.className =
-      "player";
+      const username =
+        profile?.username ||
+        profile?.display_name ||
+        "Player";
 
 
-    playerElement.innerHTML = `
+      const playerElement =
+        document.createElement(
+          "div"
+        );
 
-      <div class="player-left">
 
-        <div class="number">
-          ${player.player_number}
-        </div>
+      playerElement.className =
+        "player";
 
-        <div>
 
-          <div class="player-name">
-            ${escapeHtml(username)}
+      playerElement.innerHTML = `
+
+        <div class="player-left">
+
+          <div class="number">
+            ${player.player_number}
           </div>
 
-          ${
-            player.is_host
-              ? '<div class="host">Host</div>'
-              : ''
-          }
+          <div>
+
+            <div class="player-name">
+              ${escapeHtml(username)}
+            </div>
+
+            ${
+              player.is_host
+                ? '<div class="host">Host</div>'
+                : ''
+            }
+
+          </div>
 
         </div>
 
-      </div>
-
-    `;
+      `;
 
 
-    playersElement.appendChild(
-      playerElement
-    );
+      playersElement.appendChild(
+        playerElement
+      );
 
-  });
+    }
+  );
 
 }
 
@@ -672,12 +753,15 @@ if (copyButton) {
           "Copied!";
 
 
-        setTimeout(function () {
+        setTimeout(
+          function () {
 
-          copyButton.textContent =
-            "Copy Code";
+            copyButton.textContent =
+              "Copy Code";
 
-        }, 1500);
+          },
+          1500
+        );
 
 
       } catch (error) {
@@ -709,9 +793,23 @@ if (leaveButton) {
         "kota_room_id"
       );
 
+
       sessionStorage.removeItem(
         "kota_room_code"
       );
+
+
+      // Remove realtime channel
+      if (roomChannel) {
+
+        supabaseClient
+          .removeChannel(
+            roomChannel
+          );
+
+        roomChannel = null;
+
+      }
 
 
       window.location.href =
@@ -727,10 +825,14 @@ if (leaveButton) {
 // HELPERS
 // =========================================================
 
-function showRoomError(text) {
+function showRoomError(
+  text
+) {
 
   if (!statusElement) {
+
     return;
+
   }
 
 
@@ -744,19 +846,36 @@ function showRoomError(text) {
 }
 
 
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
   return String(value)
 
-    .replaceAll("&", "&amp;")
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
 
-    .replaceAll("<", "&lt;")
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
 
-    .replaceAll(">", "&gt;")
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
 
-    .replaceAll('"', "&quot;")
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
 
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
