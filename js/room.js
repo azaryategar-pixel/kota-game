@@ -54,10 +54,16 @@ const leaveButton =
 
 
 // =========================================================
-// REALTIME CHANNEL
+// REALTIME
 // =========================================================
 
 let roomChannel = null;
+
+let refreshTimer = null;
+
+let isRefreshing = false;
+
+let isStartingGame = false;
 
 
 // =========================================================
@@ -99,10 +105,12 @@ async function loadRoom() {
       session
     }
   } =
-    await supabaseClient
-      .auth
-      .getSession();
+    await supabaseClient.auth.getSession();
 
+
+  // -----------------------------------------
+  // NOT LOGGED IN
+  // -----------------------------------------
 
   if (!session) {
 
@@ -125,7 +133,7 @@ async function loadRoom() {
     await supabaseClient
       .from("game_rooms")
       .select(
-        "id, room_code, status, max_players"
+        "id, room_code, status, max_players, host_id"
       )
       .eq(
         "id",
@@ -170,15 +178,28 @@ async function loadRoom() {
   // LOAD PLAYERS
   // -----------------------------------------
 
-  await loadPlayers();
+  const playerCount =
+    await loadPlayers();
 
 
   // -----------------------------------------
-  // UPDATE PLAYER COUNT
+  // UPDATE STATUS
   // -----------------------------------------
 
   await updateRoomStatus(
-    room.max_players
+    room.max_players,
+    room.status
+  );
+
+
+  // -----------------------------------------
+  // CHECK START GAME
+  // -----------------------------------------
+
+  await checkStartGame(
+    room,
+    playerCount,
+    session.user.id
   );
 
 
@@ -194,12 +215,207 @@ async function loadRoom() {
 
 
 // =========================================================
+// REFRESH ROOM DATA
+// =========================================================
+
+async function refreshRoomData() {
+
+  // -----------------------------------------
+  // PREVENT DUPLICATE REFRESH
+  // -----------------------------------------
+
+  if (isRefreshing) {
+
+    return;
+
+  }
+
+
+  isRefreshing = true;
+
+
+  try {
+
+    console.log(
+      "Refreshing room data..."
+    );
+
+
+    // -----------------------------------------
+    // GET SESSION
+    // -----------------------------------------
+
+    const {
+      data: {
+        session
+      }
+    } =
+      await supabaseClient.auth.getSession();
+
+
+    if (!session) {
+
+      return;
+
+    }
+
+
+    // -----------------------------------------
+    // GET ROOM
+    // -----------------------------------------
+
+    const {
+      data: room,
+      error: roomError
+    } =
+      await supabaseClient
+        .from("game_rooms")
+        .select(
+          "id, room_code, status, max_players, host_id"
+        )
+        .eq(
+          "id",
+          roomId
+        )
+        .single();
+
+
+    if (roomError) {
+
+      console.error(
+        "Room refresh error:",
+        roomError
+      );
+
+      return;
+
+    }
+
+
+    // -----------------------------------------
+    // LOAD PLAYERS
+    // -----------------------------------------
+
+    const playerCount =
+      await loadPlayers();
+
+
+    // -----------------------------------------
+    // UPDATE COUNT / STATUS
+    // -----------------------------------------
+
+    const currentPlayerCount =
+      await updateRoomStatus(
+        room.max_players,
+        room.status
+      );
+
+
+    // -----------------------------------------
+    // CHECK LATEST ROOM STATUS
+    // -----------------------------------------
+    //
+    // Setelah pemain keluar,
+    // leave_game() mengubah room
+    // dari playing kembali ke waiting.
+    //
+    // -----------------------------------------
+
+    if (
+      currentPlayerCount <
+        room.max_players &&
+      room.status ===
+        "playing"
+    ) {
+
+      const {
+        data: latestRoom,
+        error: latestRoomError
+      } =
+        await supabaseClient
+          .from("game_rooms")
+          .select(
+            "status, max_players"
+          )
+          .eq(
+            "id",
+            roomId
+          )
+          .single();
+
+
+      if (
+        !latestRoomError &&
+        latestRoom
+      ) {
+
+        await updateRoomStatus(
+          latestRoom.max_players,
+          latestRoom.status
+        );
+
+      }
+
+    }
+
+
+    // -----------------------------------------
+    // CHECK START GAME
+    // -----------------------------------------
+
+    await checkStartGame(
+      room,
+      playerCount,
+      session.user.id
+    );
+
+
+  } finally {
+
+    isRefreshing =
+      false;
+
+  }
+
+}
+
+
+// =========================================================
+// SCHEDULE REFRESH
+// =========================================================
+
+function scheduleRefresh() {
+
+  clearTimeout(
+    refreshTimer
+  );
+
+
+  refreshTimer =
+    setTimeout(
+      async function () {
+
+        await refreshRoomData();
+
+      },
+      150
+    );
+
+}
+
+
+// =========================================================
 // UPDATE ROOM STATUS
 // =========================================================
 
 async function updateRoomStatus(
-  maxPlayers
+  maxPlayers,
+  roomStatus
 ) {
+
+  // -----------------------------------------
+  // GET PLAYER COUNT
+  // -----------------------------------------
 
   const {
     count,
@@ -221,7 +437,7 @@ async function updateRoomStatus(
 
 
   // -----------------------------------------
-  // COUNT ERROR
+  // ERROR
   // -----------------------------------------
 
   if (error) {
@@ -231,21 +447,17 @@ async function updateRoomStatus(
       error
     );
 
-    return;
+    return 0;
 
   }
 
-
-  // -----------------------------------------
-  // PLAYER COUNT
-  // -----------------------------------------
 
   const playerCount =
     count || 0;
 
 
   // -----------------------------------------
-  // UPDATE STATUS ELEMENT
+  // DISPLAY STATUS
   // -----------------------------------------
 
   if (statusElement) {
@@ -254,22 +466,25 @@ async function updateRoomStatus(
       "status";
 
 
-    // ---------------------------------------
-    // ROOM IS PLAYING
-    // ---------------------------------------
-
-    if (playerCount >= maxPlayers) {
+    if (
+      roomStatus ===
+      "playing"
+    ) {
 
       statusElement.textContent =
         "Game started";
 
-    }
 
-    // ---------------------------------------
-    // ROOM IS WAITING
-    // ---------------------------------------
+    } else if (
+      roomStatus ===
+      "starting"
+    ) {
 
-    else {
+      statusElement.textContent =
+        "Game starting...";
+
+
+    } else {
 
       statusElement.textContent =
         `Waiting for players · ${playerCount}/${maxPlayers}`;
@@ -278,11 +493,177 @@ async function updateRoomStatus(
 
   }
 
+
+  return playerCount;
+
 }
 
 
 // =========================================================
-// REALTIME
+// CHECK START GAME
+// =========================================================
+
+async function checkStartGame(
+  room,
+  playerCount,
+  currentUserId
+) {
+
+  // -----------------------------------------
+  // ROOM ALREADY PLAYING
+  // -----------------------------------------
+
+  if (
+    room.status ===
+    "playing"
+  ) {
+
+    return;
+
+  }
+
+
+  // -----------------------------------------
+  // ROOM STARTING
+  // -----------------------------------------
+
+  if (
+    room.status ===
+    "starting"
+  ) {
+
+    return;
+
+  }
+
+
+  // -----------------------------------------
+  // NOT ENOUGH PLAYERS
+  // -----------------------------------------
+
+  if (
+    playerCount <
+    room.max_players
+  ) {
+
+    return;
+
+  }
+
+
+  // -----------------------------------------
+  // ONLY HOST STARTS GAME
+  // -----------------------------------------
+
+  if (
+    room.host_id !==
+    currentUserId
+  ) {
+
+    return;
+
+  }
+
+
+  // -----------------------------------------
+  // PREVENT DUPLICATE RPC
+  // -----------------------------------------
+
+  if (isStartingGame) {
+
+    return;
+
+  }
+
+
+  isStartingGame =
+    true;
+
+
+  try {
+
+    console.log(
+      "Room full. Starting game..."
+    );
+
+
+    if (statusElement) {
+
+      statusElement.className =
+        "status";
+
+      statusElement.textContent =
+        "Game starting...";
+
+    }
+
+
+    // -----------------------------------------
+    // CALL START GAME RPC
+    // -----------------------------------------
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .rpc(
+          "start_game",
+          {
+            p_game_id:
+              room.id
+          }
+        );
+
+
+    // -----------------------------------------
+    // RPC ERROR
+    // -----------------------------------------
+
+    if (error) {
+
+      console.error(
+        "Start game error:",
+        error
+      );
+
+
+      if (statusElement) {
+
+        statusElement.textContent =
+          `Waiting for players · ${playerCount}/${room.max_players}`;
+
+      }
+
+
+      return;
+
+    }
+
+
+    console.log(
+      "Game started successfully."
+    );
+
+
+    // -----------------------------------------
+    // REFRESH ROOM
+    // -----------------------------------------
+
+    await refreshRoomData();
+
+
+  } finally {
+
+    isStartingGame =
+      false;
+
+  }
+
+}
+
+
+// =========================================================
+// REALTIME SUBSCRIPTION
 // =========================================================
 
 function subscribeToRoom(
@@ -290,7 +671,7 @@ function subscribeToRoom(
 ) {
 
   // -----------------------------------------
-  // CLEAN OLD CHANNEL
+  // REMOVE OLD CHANNEL
   // -----------------------------------------
 
   if (roomChannel) {
@@ -299,6 +680,9 @@ function subscribeToRoom(
       .removeChannel(
         roomChannel
       );
+
+    roomChannel =
+      null;
 
   }
 
@@ -310,84 +694,94 @@ function subscribeToRoom(
   roomChannel =
     supabaseClient
       .channel(
-        `kota-room-${currentRoomId}`
+        `kota-room-${currentRoomId}-${Date.now()}`
       );
 
 
-  // -----------------------------------------
-  // PLAYER CHANGES
-  // -----------------------------------------
+  // =======================================================
+  // GAME PLAYERS - INSERT
+  // =======================================================
 
   roomChannel.on(
     "postgres_changes",
     {
-      event: "*",
+      event: "INSERT",
       schema: "public",
       table: "game_players",
       filter:
         `game_id=eq.${currentRoomId}`
     },
-    async function () {
+    function (payload) {
 
       console.log(
-        "Player change detected"
+        "PLAYER JOINED:",
+        payload
       );
 
 
-      // -------------------------------------
-      // RELOAD PLAYER LIST
-      // -------------------------------------
-
-      await loadPlayers();
-
-
-      // -------------------------------------
-      // GET LATEST ROOM INFORMATION
-      // -------------------------------------
-
-      const {
-        data: room,
-        error: roomError
-      } =
-        await supabaseClient
-          .from("game_rooms")
-          .select(
-            "max_players"
-          )
-          .eq(
-            "id",
-            currentRoomId
-          )
-          .single();
-
-
-      if (roomError) {
-
-        console.error(
-          "Room status error:",
-          roomError
-        );
-
-        return;
-
-      }
-
-
-      if (room) {
-
-        await updateRoomStatus(
-          room.max_players
-        );
-
-      }
+      scheduleRefresh();
 
     }
   );
 
 
-  // -----------------------------------------
-  // ROOM CHANGES
-  // -----------------------------------------
+  // =======================================================
+  // GAME PLAYERS - DELETE
+  // =======================================================
+
+  roomChannel.on(
+    "postgres_changes",
+    {
+      event: "DELETE",
+      schema: "public",
+      table: "game_players",
+      filter:
+        `game_id=eq.${currentRoomId}`
+    },
+    function (payload) {
+
+      console.log(
+        "PLAYER LEFT:",
+        payload
+      );
+
+
+      scheduleRefresh();
+
+    }
+  );
+
+
+  // =======================================================
+  // GAME PLAYERS - UPDATE
+  // =======================================================
+
+  roomChannel.on(
+    "postgres_changes",
+    {
+      event: "UPDATE",
+      schema: "public",
+      table: "game_players",
+      filter:
+        `game_id=eq.${currentRoomId}`
+    },
+    function (payload) {
+
+      console.log(
+        "PLAYER UPDATED:",
+        payload
+      );
+
+
+      scheduleRefresh();
+
+    }
+  );
+
+
+  // =======================================================
+  // GAME ROOMS
+  // =======================================================
 
   roomChannel.on(
     "postgres_changes",
@@ -398,75 +792,23 @@ function subscribeToRoom(
       filter:
         `id=eq.${currentRoomId}`
     },
-    async function () {
+    function (payload) {
 
       console.log(
-        "Room change detected"
+        "ROOM CHANGED:",
+        payload
       );
 
 
-      const {
-        data: room,
-        error: roomError
-      } =
-        await supabaseClient
-          .from("game_rooms")
-          .select(
-            "id, room_code, status, max_players"
-          )
-          .eq(
-            "id",
-            currentRoomId
-          )
-          .single();
-
-
-      if (roomError) {
-
-        console.error(
-          "Room realtime error:",
-          roomError
-        );
-
-        return;
-
-      }
-
-
-      if (!room) {
-
-        return;
-
-      }
-
-
-      // -------------------------------------
-      // UPDATE ROOM CODE
-      // -------------------------------------
-
-      if (roomCodeElement) {
-
-        roomCodeElement.textContent =
-          room.room_code;
-
-      }
-
-
-      // -------------------------------------
-      // UPDATE PLAYER COUNT
-      // -------------------------------------
-
-      await updateRoomStatus(
-        room.max_players
-      );
+      scheduleRefresh();
 
     }
   );
 
 
-  // -----------------------------------------
+  // =======================================================
   // SUBSCRIBE
-  // -----------------------------------------
+  // =======================================================
 
   roomChannel.subscribe(
     function (status) {
@@ -476,7 +818,11 @@ function subscribeToRoom(
         status
       );
 
-      if (status === "SUBSCRIBED") {
+
+      if (
+        status ===
+        "SUBSCRIBED"
+      ) {
 
         console.log(
           "KOTA realtime connected."
@@ -532,11 +878,13 @@ async function loadPlayers() {
       playersError
     );
 
+
     showRoomError(
       "Pemain tidak dapat dimuat."
     );
 
-    return;
+
+    return 0;
 
   }
 
@@ -552,7 +900,7 @@ async function loadPlayers() {
 
     renderPlayers([]);
 
-    return;
+    return 0;
 
   }
 
@@ -591,7 +939,7 @@ async function loadPlayers() {
 
 
   // -----------------------------------------
-  // PROFILES ERROR
+  // PROFILE ERROR
   // -----------------------------------------
 
   if (profilesError) {
@@ -601,11 +949,13 @@ async function loadPlayers() {
       profilesError
     );
 
+
     showRoomError(
       "Profile pemain tidak dapat dimuat."
     );
 
-    return;
+
+    return players.length;
 
   }
 
@@ -654,12 +1004,15 @@ async function loadPlayers() {
 
 
   // -----------------------------------------
-  // RENDER PLAYERS
+  // RENDER
   // -----------------------------------------
 
   renderPlayers(
     playersWithProfiles
   );
+
+
+  return players.length;
 
 }
 
@@ -680,7 +1033,7 @@ function renderPlayers(
 
 
   // -----------------------------------------
-  // CLEAR CURRENT PLAYERS
+  // CLEAR
   // -----------------------------------------
 
   playersElement.innerHTML =
@@ -695,9 +1048,11 @@ function renderPlayers(
 
     playersElement.innerHTML = `
       <div class="player">
+
         <div class="player-name loading">
           No players yet
         </div>
+
       </div>
     `;
 
@@ -737,7 +1092,6 @@ function renderPlayers(
       // PLAYER HTML
       // ---------------------------------------
       // NOMOR PEMAIN SUDAH DIHAPUS
-      // HANYA USERNAME + HOST
       // ---------------------------------------
 
       playerElement.innerHTML = `
@@ -828,26 +1182,38 @@ if (leaveButton) {
     "click",
     async function () {
 
-      leaveButton.disabled = true;
+      // -----------------------------------------
+      // DISABLE BUTTON
+      // -----------------------------------------
+
+      leaveButton.disabled =
+        true;
+
 
       leaveButton.textContent =
         "Leaving...";
 
 
-      // ---------------------------------------
-      // CALL DATABASE FUNCTION
-      // ---------------------------------------
+      // -----------------------------------------
+      // CALL RPC
+      // -----------------------------------------
 
       const {
         error
       } =
-        await supabaseClient.rpc(
-          "leave_game",
-          {
-            p_game_id: roomId
-          }
-        );
+        await supabaseClient
+          .rpc(
+            "leave_game",
+            {
+              p_game_id:
+                roomId
+            }
+          );
 
+
+      // -----------------------------------------
+      // HANDLE ERROR
+      // -----------------------------------------
 
       if (error) {
 
@@ -856,49 +1222,60 @@ if (leaveButton) {
           error
         );
 
+
         leaveButton.disabled =
           false;
 
+
         leaveButton.textContent =
           "Leave Room";
+
+
+        alert(
+          "Gagal keluar dari room."
+        );
+
 
         return;
 
       }
 
 
-      // ---------------------------------------
-      // REMOVE SESSION STORAGE
-      // ---------------------------------------
+      // -----------------------------------------
+      // REMOVE SESSION
+      // -----------------------------------------
 
       sessionStorage.removeItem(
         "kota_room_id"
       );
+
 
       sessionStorage.removeItem(
         "kota_room_code"
       );
 
 
-      // ---------------------------------------
-      // REMOVE REALTIME CHANNEL
-      // ---------------------------------------
+      // -----------------------------------------
+      // REMOVE REALTIME
+      // -----------------------------------------
 
       if (roomChannel) {
 
-        supabaseClient
+        await supabaseClient
           .removeChannel(
             roomChannel
           );
 
-        roomChannel = null;
+
+        roomChannel =
+          null;
 
       }
 
 
-      // ---------------------------------------
-      // RETURN TO LOBBY
-      // ---------------------------------------
+      // -----------------------------------------
+      // GO LOBBY
+      // -----------------------------------------
 
       window.location.href =
         "lobby.html";
