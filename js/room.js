@@ -58,6 +58,8 @@ let refreshTimer = null;
 
 let isRefreshing = false;
 
+let isStartingGame = false;
+
 
 // =========================================================
 // INITIAL CHECK
@@ -101,13 +103,16 @@ async function loadRoom() {
     await supabaseClient.auth.getSession();
 
 
+  // -----------------------------------------
+  // NOT LOGGED IN
+  // -----------------------------------------
+
   if (!session) {
 
     window.location.href =
       "login.html";
 
     return;
-
   }
 
 
@@ -122,7 +127,7 @@ async function loadRoom() {
     await supabaseClient
       .from("game_rooms")
       .select(
-        "id, room_code, status, max_players"
+        "id, room_code, status, max_players, host_id"
       )
       .eq(
         "id",
@@ -147,7 +152,6 @@ async function loadRoom() {
     );
 
     return;
-
   }
 
 
@@ -167,7 +171,8 @@ async function loadRoom() {
   // LOAD PLAYERS
   // -----------------------------------------
 
-  await loadPlayers();
+  const playerCount =
+    await loadPlayers();
 
 
   // -----------------------------------------
@@ -175,7 +180,19 @@ async function loadRoom() {
   // -----------------------------------------
 
   await updateRoomStatus(
-    room.max_players
+    room.max_players,
+    room.status
+  );
+
+
+  // -----------------------------------------
+  // CHECK START GAME
+  // -----------------------------------------
+
+  await checkStartGame(
+    room,
+    playerCount,
+    session.user.id
   );
 
 
@@ -218,14 +235,26 @@ async function refreshRoomData() {
 
 
     // -----------------------------------------
-    // LOAD PLAYERS
+    // GET SESSION
     // -----------------------------------------
 
-    await loadPlayers();
+    const {
+      data: {
+        session
+      }
+    } =
+      await supabaseClient.auth.getSession();
+
+
+    if (!session) {
+
+      return;
+
+    }
 
 
     // -----------------------------------------
-    // GET ROOM LIMIT
+    // GET ROOM
     // -----------------------------------------
 
     const {
@@ -235,7 +264,7 @@ async function refreshRoomData() {
       await supabaseClient
         .from("game_rooms")
         .select(
-          "max_players"
+          "id, room_code, status, max_players, host_id"
         )
         .eq(
           "id",
@@ -247,7 +276,7 @@ async function refreshRoomData() {
     if (roomError) {
 
       console.error(
-        "Room status error:",
+        "Room refresh error:",
         roomError
       );
 
@@ -257,16 +286,33 @@ async function refreshRoomData() {
 
 
     // -----------------------------------------
-    // UPDATE COUNT
+    // LOAD PLAYERS
     // -----------------------------------------
 
-    if (room) {
+    const playerCount =
+      await loadPlayers();
 
-      await updateRoomStatus(
-        room.max_players
-      );
 
-    }
+    // -----------------------------------------
+    // UPDATE COUNT / STATUS
+    // -----------------------------------------
+
+    await updateRoomStatus(
+      room.max_players,
+      room.status
+    );
+
+
+    // -----------------------------------------
+    // CHECK START GAME
+    // -----------------------------------------
+
+    await checkStartGame(
+      room,
+      playerCount,
+      session.user.id
+    );
+
 
   } finally {
 
@@ -307,8 +353,13 @@ function scheduleRefresh() {
 // =========================================================
 
 async function updateRoomStatus(
-  maxPlayers
+  maxPlayers,
+  roomStatus
 ) {
+
+  // -----------------------------------------
+  // GET PLAYER COUNT
+  // -----------------------------------------
 
   const {
     count,
@@ -329,6 +380,10 @@ async function updateRoomStatus(
       );
 
 
+  // -----------------------------------------
+  // ERROR
+  // -----------------------------------------
+
   if (error) {
 
     console.error(
@@ -336,7 +391,7 @@ async function updateRoomStatus(
       error
     );
 
-    return;
+    return 0;
 
   }
 
@@ -345,14 +400,204 @@ async function updateRoomStatus(
     count || 0;
 
 
+  // -----------------------------------------
+  // DISPLAY STATUS
+  // -----------------------------------------
+
   if (statusElement) {
 
     statusElement.className =
       "status";
 
 
-    statusElement.textContent =
-      `Waiting for players · ${playerCount}/${maxPlayers}`;
+    if (
+      roomStatus ===
+      "playing"
+    ) {
+
+      statusElement.textContent =
+        "Game started";
+
+    } else if (
+      roomStatus ===
+      "starting"
+    ) {
+
+      statusElement.textContent =
+        "Game starting...";
+
+    } else {
+
+      statusElement.textContent =
+        `Waiting for players · ${playerCount}/${maxPlayers}`;
+
+    }
+
+  }
+
+
+  return playerCount;
+
+}
+
+
+// =========================================================
+// CHECK START GAME
+// =========================================================
+
+async function checkStartGame(
+  room,
+  playerCount,
+  currentUserId
+) {
+
+  // -----------------------------------------
+  // ROOM ALREADY PLAYING
+  // -----------------------------------------
+
+  if (
+    room.status ===
+    "playing"
+  ) {
+
+    return;
+
+  }
+
+
+  // -----------------------------------------
+  // ROOM STARTING
+  // -----------------------------------------
+
+  if (
+    room.status ===
+    "starting"
+  ) {
+
+    return;
+
+  }
+
+
+  // -----------------------------------------
+  // NOT ENOUGH PLAYERS
+  // -----------------------------------------
+
+  if (
+    playerCount <
+    room.max_players
+  ) {
+
+    return;
+
+  }
+
+
+  // -----------------------------------------
+  // ONLY HOST STARTS GAME
+  // -----------------------------------------
+
+  if (
+    room.host_id !==
+    currentUserId
+  ) {
+
+    return;
+
+  }
+
+
+  // -----------------------------------------
+  // PREVENT DUPLICATE RPC
+  // -----------------------------------------
+
+  if (isStartingGame) {
+
+    return;
+
+  }
+
+
+  isStartingGame =
+    true;
+
+
+  try {
+
+    console.log(
+      "Room full. Starting game..."
+    );
+
+
+    if (statusElement) {
+
+      statusElement.className =
+        "status";
+
+      statusElement.textContent =
+        "Game starting...";
+
+    }
+
+
+    // -----------------------------------------
+    // CALL START GAME RPC
+    // -----------------------------------------
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .rpc(
+          "start_game",
+          {
+            p_game_id:
+              room.id
+          }
+        );
+
+
+    // -----------------------------------------
+    // RPC ERROR
+    // -----------------------------------------
+
+    if (error) {
+
+      console.error(
+        "Start game error:",
+        error
+      );
+
+
+      if (statusElement) {
+
+        statusElement.textContent =
+          `Waiting for players · ${playerCount}/${room.max_players}`;
+
+      }
+
+
+      return;
+
+    }
+
+
+    console.log(
+      "Game started successfully."
+    );
+
+
+    // -----------------------------------------
+    // REFRESH ROOM
+    // -----------------------------------------
+
+    await refreshRoomData();
+
+
+  } finally {
+
+    isStartingGame =
+      false;
 
   }
 
@@ -579,7 +824,7 @@ async function loadPlayers() {
       "Pemain tidak dapat dimuat."
     );
 
-    return;
+    return 0;
 
   }
 
@@ -595,7 +840,7 @@ async function loadPlayers() {
 
     renderPlayers([]);
 
-    return;
+    return 0;
 
   }
 
@@ -648,7 +893,7 @@ async function loadPlayers() {
       "Profile pemain tidak dapat dimuat."
     );
 
-    return;
+    return players.length;
 
   }
 
@@ -703,6 +948,9 @@ async function loadPlayers() {
   renderPlayers(
     playersWithProfiles
   );
+
+
+  return players.length;
 
 }
 
