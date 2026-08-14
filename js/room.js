@@ -297,10 +297,34 @@ async function refreshRoomData() {
     // UPDATE COUNT / STATUS
     // -----------------------------------------
 
-    await updateRoomStatus(
+    const currentPlayerCount = await updateRoomStatus(
       room.max_players,
       room.status
     );
+
+    // Setelah pemain keluar, leave_game() mengubah room
+    // dari playing kembali ke waiting. Ambil status terbaru
+    // dari database agar UI tidak tertinggal di "Game started".
+    if (
+      currentPlayerCount < room.max_players &&
+      room.status === "playing"
+    ) {
+      const {
+        data: latestRoom,
+        error: latestRoomError
+      } = await supabaseClient
+        .from("game_rooms")
+        .select("status, max_players")
+        .eq("id", roomId)
+        .single();
+
+      if (!latestRoomError && latestRoom) {
+        await updateRoomStatus(
+          latestRoom.max_players,
+          latestRoom.status
+        );
+      }
+    }
 
 
     // -----------------------------------------
@@ -777,7 +801,6 @@ function subscribeToRoom(
 
 }
 
-
 // =========================================================
 // LOAD PLAYERS
 // =========================================================
@@ -1108,7 +1131,6 @@ if (copyButton) {
   );
 
 }
-
 
 // =========================================================
 // LEAVE ROOM
